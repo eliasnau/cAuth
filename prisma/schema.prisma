@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String     @id @default(cuid())
+  email String  @unique
+  emailVerified DateTime?
+
+  name  String?
+  profileImg String?
+  password      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret String?
+  backupCodes String[]
+  
+  maxActiveSessions Int @default(5)
+  notifyOnNewLogin Boolean @default(true)
+  
+  lastLoginAt DateTime?
+  failedLoginAttempts Int @default(0)
+  lockedUntil DateTime?
+
+  banHistory Ban[]
+  
+  riskLevel String @default("LOW") // LOW, MEDIUM, HIGH
+
+  emailVerificationToken String?
+
+  PasswordResetToken PasswordResetToken[]
+}
+
+model Session {
+  id String @id @default(cuid())
+  userId String
+  expires DateTime
+
+  lastActive DateTime @default(now())
+  isValid Boolean @default(true)
+  revokedAt DateTime?
+  revokedReason String?
+  
+  deviceId String?  
+  deviceFingerprint String?
+  trustedDevice Boolean @default(false)
+  
+  ipAddress String?
+  userAgent String?
+  browser String?
+  operatingSystem String?
+  deviceType String?
+  isMobile Boolean?
+  lastLocation String?
+  
+  lastIpAddress String?
+  ipAddressHistory Json?
+  suspiciousActivity Boolean @default(false)
+  
+  sessionToken String @unique
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isValid])
+}
+
+model Ban {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  
+  reason String
+  note String? 
+  evidence Json? 
+  
+  createdAt DateTime @default(now())
+  expiresAt DateTime? // null == permanent
+  liftedAt DateTime?
+  liftedBy String? 
+  liftReason String?
+  
+  issuedBy String 
+  ipAddress String?
+  deviceId String?
+  
+  @@index([userId, createdAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([token])
+  @@index([userId])
+}

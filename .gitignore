@@ -1,0 +1,11 @@
+# General
+/node_modules
+/.env*
+/error.log
+/project/node_modules
+/project/.env
+/project/error.log
+
+#Editors
+/.vscode
+/.idea
