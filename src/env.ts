@@ -10,6 +10,13 @@ export const env = createEnv({
     JWT_REFRESH_TOKEN_SECRET: z.string().min(1), //! Change to 32 in production
 
     DATABASE_URL: z.string().min(1),
+
+    SMTP_HOST: z.string().min(1),
+    SMTP_PORT: z.number().min(1),
+    SMTP_USER: z.string().min(1),
+    SMTP_PASS: z.string().min(1),
+    SMTP_FROM_EMAIL: z.string().email(),
+    SMTP_FROM_NAME: z.string().min(1),
   },
 
   runtimeEnv: process.env,

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import UAParser from "ua-parser-js";
+import { UAParser } from "ua-parser-js";
 import { db } from "../../lib/db";
 
 export const login = async (
@@ -54,7 +54,8 @@ export const login = async (
     }
 
     //! UAParser error
-    const parser = UAParser(req.headers["user-agent"]);
+    const parser = new UAParser();
+    parser.setUA(req.headers["user-agent"] as string);
     const userAgent = parser.getResult();
 
     const session = await db.session.create({

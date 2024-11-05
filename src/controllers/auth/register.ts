@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import UAParser from "ua-parser-js";
+import { UAParser } from "ua-parser-js";
 import { db } from "../../lib/db";
 import crypto from "crypto";
 import { sendVerificationEmail } from "../../lib/email";
@@ -58,8 +58,9 @@ export const register = async (
 
     await sendVerificationEmail(user.email, emailVerificationToken);
 
-    //! Parse user agent error
-    const parser = UAParser(req.headers["user-agent"]);
+    // Fix UAParser usage
+    const parser = new UAParser();
+    parser.setUA(req.headers["user-agent"] as string);
     const userAgent = parser.getResult();
 
     const session = await db.session.create({

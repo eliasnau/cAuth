@@ -1,17 +1,34 @@
 import express from "express";
-import { login } from "../../controllers/authentication.controller";
-import { rateLimiter, RateLimiterRule } from "../../middleware/rateLimiter";
+import {
+  authenticateUser,
+  changePassword,
+  login,
+  logout,
+  refreshToken,
+  register,
+  requestPasswordReset,
+  resetPassword,
+  revokeSession,
+  revokeAllSessions,
+  listSessions,
+  verifyEmail,
+} from "../../controllers/auth";
+import authenticationMiddleware from "../../middleware/authMiddleware";
 
 const router = express.Router();
 
-const AUTH_RATE_LIMITER_RULE: RateLimiterRule = {
-  endpoint: "auth",
-  rate_limit: {
-    time: 60,
-    limit: 3,
-  },
-};
+router.post("/login", login);
+router.post("/register", register);
+router.post("/refresh-token", refreshToken);
+router.post("/request-reset", requestPasswordReset);
+router.post("/reset-password", resetPassword);
+router.post("/verify-email", verifyEmail);
 
-router.post("/login", rateLimiter(AUTH_RATE_LIMITER_RULE), login);
+router.get("/me", authenticationMiddleware, authenticateUser);
+router.post("/logout", authenticationMiddleware, logout);
+router.post("/change-password", authenticationMiddleware, changePassword);
+router.get("/sessions", authenticationMiddleware, listSessions);
+router.delete("/sessions/:sessionId", authenticationMiddleware, revokeSession);
+router.delete("/sessions", authenticationMiddleware, revokeAllSessions);
 
 export default router;
