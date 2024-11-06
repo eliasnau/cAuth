@@ -4,7 +4,8 @@ import jwt from "jsonwebtoken";
 import { UAParser } from "ua-parser-js";
 import { db } from "../../lib/db";
 import crypto from "crypto";
-import { sendVerificationEmail } from "../../lib/email";
+import { sendVerificationEmail } from "../../lib/nodemailer";
+import { env } from "../../env";
 
 export const register = async (
   req: Request,
@@ -40,7 +41,6 @@ export const register = async (
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const emailVerificationToken = crypto.randomBytes(32).toString("hex");
 
     const user = await db.user.create({
@@ -56,9 +56,15 @@ export const register = async (
       },
     });
 
-    await sendVerificationEmail(user.email, emailVerificationToken);
+    try {
+      console.log("Sending verification email to", user.email);
+      await sendVerificationEmail(user.email, emailVerificationToken);
+      console.log("Email sent successfully");
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+      // Continue with registration even if email fails
+    }
 
-    // Fix UAParser usage
     const parser = new UAParser();
     parser.setUA(req.headers["user-agent"] as string);
     const userAgent = parser.getResult();
@@ -66,7 +72,7 @@ export const register = async (
     const session = await db.session.create({
       data: {
         userId: user.id,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         ipAddress: req.ip,
         userAgent: req.headers["user-agent"],
         browser: userAgent.browser.name,
@@ -83,7 +89,7 @@ export const register = async (
         userId: user.id,
         sessionId: session.id,
       },
-      process.env.JWT_ACCESS_SECRET!,
+      env.JWT_ACCESS_TOKEN_SECRET,
       { expiresIn: "15m" }
     );
 
@@ -93,15 +99,15 @@ export const register = async (
         sessionId: session.id,
         sessionToken: session.sessionToken,
       },
-      process.env.JWT_REFRESH_SECRET!,
+      env.JWT_REFRESH_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(201).json({
@@ -116,6 +122,7 @@ export const register = async (
       },
     });
   } catch (error) {
-    next(error);
+    console.error("Registration error:", error);
+    return res.status(500).json({ message: "Registration failed" });
   }
 };

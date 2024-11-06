@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { db } from "../../lib/db";
 import jwt from "jsonwebtoken";
+import { env } from "../../env";
 
 export const logout = async (
   req: Request,
@@ -8,26 +9,37 @@ export const logout = async (
   next: NextFunction
 ) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    console.log(req.cookies);
+    const refreshToken = req?.cookies?.refreshToken;
 
-    if (refreshToken) {
-      try {
-        const decoded = jwt.verify(
-          refreshToken,
-          process.env.JWT_REFRESH_SECRET!
-        ) as {
-          sessionId: string;
-        };
+    if (!refreshToken) {
+      return res.status(400).json({
+        code: "NO_REFRESH_TOKEN",
+        message: "No refresh token provided",
+      });
+    }
 
-        await db.session.update({
-          where: { id: decoded.sessionId },
-          data: {
-            isValid: false,
-            revokedAt: new Date(),
-            revokedReason: "User logout",
-          },
-        });
-      } catch (error) {}
+    try {
+      const decoded = jwt.verify(
+        refreshToken,
+        env.JWT_REFRESH_TOKEN_SECRET
+      ) as {
+        sessionId: string;
+      };
+
+      await db.session.update({
+        where: { id: decoded.sessionId },
+        data: {
+          isValid: false,
+          revokedAt: new Date(),
+          revokedReason: "User logout",
+        },
+      });
+    } catch (error) {
+      return res.status(401).json({
+        code: "INVALID_REFRESH_TOKEN",
+        message: "Invalid refresh token",
+      });
     }
 
     res.clearCookie("refreshToken", {
@@ -41,6 +53,10 @@ export const logout = async (
       message: "Successfully logged out",
     });
   } catch (error) {
-    next(error);
+    console.error("Login error:", error);
+    return res.status(500).json({
+      code: "AUTH_ERROR",
+      message: "Internal server error",
+    });
   }
 };

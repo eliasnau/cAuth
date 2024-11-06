@@ -2,12 +2,9 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { db } from "../../lib/db";
 import crypto from "crypto";
+import { env } from "../../env";
 
-export const refreshToken = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const refreshToken = async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
@@ -17,10 +14,7 @@ export const refreshToken = async (
       });
     }
 
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET!
-    ) as {
+    const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_TOKEN_SECRET) as {
       userId: string;
       sessionId: string;
       sessionToken: string;
@@ -94,7 +88,7 @@ export const refreshToken = async (
         userId: session.user.id,
         sessionId: session.id,
       },
-      process.env.JWT_ACCESS_SECRET!,
+      env.JWT_ACCESS_TOKEN_SECRET,
       { expiresIn: "15m" }
     );
 
@@ -104,13 +98,13 @@ export const refreshToken = async (
         sessionId: session.id,
         sessionToken: newSessionToken,
       },
-      process.env.JWT_REFRESH_SECRET!,
+      env.JWT_REFRESH_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
 
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -131,6 +125,10 @@ export const refreshToken = async (
         message: "Invalid refresh token",
       });
     }
-    next(error);
+    console.error("refreshToken error:", error);
+    return res.status(500).json({
+      code: "AUTH_ERROR",
+      message: "Internal server error",
+    });
   }
 };

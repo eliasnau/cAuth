@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { db } from "../../lib/db";
 import crypto from "crypto";
-import { sendPasswordResetEmail } from "../../lib/email";
+//import { sendPasswordResetEmail } from "../../lib/email";
 
 export const requestPasswordReset = async (
   req: Request,
@@ -41,7 +41,7 @@ export const requestPasswordReset = async (
       },
     });
 
-    await sendPasswordResetEmail(user.email, token);
+    //await sendPasswordResetEmail(user.email, token);
 
     return res.json({
       code: "RESET_EMAIL_SENT",

@@ -10,6 +10,8 @@ export const revokeSession = async (
     const { sessionId } = req.params;
     const userId = (req as any).user.id;
 
+    console.log(sessionId);
+
     const session = await db.session.findFirst({
       where: {
         id: sessionId,
@@ -46,7 +48,11 @@ export const revokeSession = async (
       message: "Session revoked successfully",
     });
   } catch (error) {
-    next(error);
+    console.error("Registration error:", error);
+    return res.status(500).json({
+      code: "AUTH_ERROR",
+      message: "Internal server error",
+    });
   }
 };
 
@@ -77,6 +83,10 @@ export const revokeAllSessions = async (
       count: result.count,
     });
   } catch (error) {
-    next(error);
+    console.error("Registration error:", error);
+    return res.status(500).json({
+      code: "AUTH_ERROR",
+      message: "Internal server error",
+    });
   }
 };

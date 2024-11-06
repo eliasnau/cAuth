@@ -9,3 +9,4 @@ export { resetPassword } from "./resetPassword";
 export { revokeSession, revokeAllSessions } from "./revokeSessions";
 export { listSessions } from "./listSessions";
 export { verifyEmail } from "./verifyEmail";
+export { getSessionInfo } from "./getSessionInfo";

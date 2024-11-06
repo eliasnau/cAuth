@@ -1,14 +1,12 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { UAParser } from "ua-parser-js";
 import { db } from "../../lib/db";
+import { createSession } from "../../utils/session";
+import { generateTokens } from "../../utils/jwt";
+import { setRefreshTokenCookie } from "../../utils/cookie";
+import { authResponses } from "../../utils/responses";
 
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -18,18 +16,14 @@ export const login = async (
         .json({ message: "Email and password are required" });
     }
 
-    const user = await db.user.findUnique({
-      where: { email },
-    });
+    const user = await db.user.findUnique({ where: { email } });
 
     if (!user || !user.password) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return authResponses.invalidCredentials(res);
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      return res.status(403).json({
-        message: "Account is temporarily locked. Please try again later",
-      });
+      return authResponses.accountLocked(res);
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
@@ -50,46 +44,20 @@ export const login = async (
         },
       });
 
-      return res.status(401).json({ message: "Invalid credentials" });
+      return authResponses.invalidCredentials(res);
     }
 
-    //! UAParser error
-    const parser = new UAParser();
-    parser.setUA(req.headers["user-agent"] as string);
-    const userAgent = parser.getResult();
-
-    const session = await db.session.create({
-      data: {
-        userId: user.id,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        ipAddress: req.ip,
-        userAgent: req.headers["user-agent"],
-        browser: userAgent.browser.name,
-        operatingSystem: userAgent.os.name,
-        deviceType: userAgent.device.type || "desktop",
-        isMobile: !!userAgent.device.type,
-        sessionToken: crypto.randomUUID(),
-      },
+    const session = await createSession({
+      userId: user.id,
+      userAgent: req.headers["user-agent"],
+      ipAddress: req.ip,
     });
 
-    const accessToken = jwt.sign(
-      {
-        userId: user.id,
-        sessionId: session.id,
-      },
-      process.env.JWT_ACCESS_SECRET!,
-      { expiresIn: "15m" }
-    );
-
-    const refreshToken = jwt.sign(
-      {
-        userId: user.id,
-        sessionId: session.id,
-        sessionToken: session.sessionToken,
-      },
-      process.env.JWT_REFRESH_SECRET!,
-      { expiresIn: "7d" }
-    );
+    const { accessToken, refreshToken } = generateTokens({
+      userId: user.id,
+      sessionId: session.id,
+      sessionToken: session.sessionToken,
+    });
 
     await db.user.update({
       where: { id: user.id },
@@ -100,12 +68,7 @@ export const login = async (
       },
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    setRefreshTokenCookie(res, refreshToken);
 
     return res.json({
       accessToken,
@@ -117,6 +80,7 @@ export const login = async (
       },
     });
   } catch (error) {
-    next(error);
+    console.error("Login error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

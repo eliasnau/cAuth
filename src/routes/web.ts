@@ -6,6 +6,6 @@ router.get("/", (req, res) => {
   res.send("Hello, this is a simple Express.js server!");
 });
 
-router.use("/api/v1", [v1]);
+router.use("/v1", [v1]);
 
 export default router;

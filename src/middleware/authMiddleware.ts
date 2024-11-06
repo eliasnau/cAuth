@@ -24,41 +24,50 @@ const authenticationMiddleware = async (
       sessionId: string;
     };
 
-    const [user, session] = await Promise.all([
-      db.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          profileImg: true,
-          emailVerified: true,
-          twoFactorEnabled: true,
-          riskLevel: true,
-          banHistory: {
-            where: {
-              OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
-              AND: {
-                liftedAt: null,
-              },
-            },
-            select: {
-              reason: true,
-              expiresAt: true,
+    // Check session first
+    const session = await db.session.findFirst({
+      where: {
+        id: decoded.sessionId,
+        isValid: true,
+        revokedAt: null,
+        expires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!session) {
+      return res.status(401).json({
+        code: "AUTH_INVALID_SESSION",
+        message: "Invalid or expired session",
+      });
+    }
+
+    // Only fetch user if session is valid
+    const user = await db.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        profileImg: true,
+        emailVerified: true,
+        twoFactorEnabled: true,
+        riskLevel: true,
+        banHistory: {
+          where: {
+            OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
+            AND: {
+              liftedAt: null,
             },
           },
-        },
-      }),
-      db.session.findFirst({
-        where: {
-          id: decoded.sessionId,
-          isValid: true,
-          expires: {
-            gt: new Date(),
+          select: {
+            reason: true,
+            expiresAt: true,
           },
         },
-      }),
-    ]);
+      },
+    });
 
     if (!user) {
       return res.status(401).json({
@@ -83,13 +92,6 @@ const authenticationMiddleware = async (
       return res.status(403).json({
         code: "AUTH_EMAIL_NOT_VERIFIED",
         message: "Please verify your email address to continue",
-      });
-    }
-
-    if (!session) {
-      return res.status(401).json({
-        code: "AUTH_INVALID_SESSION",
-        message: "Invalid or expired session",
       });
     }
 
