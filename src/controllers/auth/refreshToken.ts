@@ -1,8 +1,11 @@
-import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { db } from "../../lib/db";
+import { Request, Response } from "express";
+import { authService } from "../../services/authService";
+import { sessionService } from "../../services/sessionService";
+import { verifyRefreshToken, generateTokens } from "../../utils/jwt";
+import { setRefreshTokenCookie } from "../../utils/cookie";
 import crypto from "crypto";
-import { env } from "../../env";
+import { db } from "../../lib/db";
+import { JsonWebTokenError } from "jsonwebtoken";
 
 export const refreshToken = async (req: Request, res: Response) => {
   try {
@@ -14,21 +17,14 @@ export const refreshToken = async (req: Request, res: Response) => {
       });
     }
 
-    const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_TOKEN_SECRET) as {
-      userId: string;
-      sessionId: string;
-      sessionToken: string;
-    };
-
+    const decoded = verifyRefreshToken(refreshToken);
     const session = await db.session.findFirst({
       where: {
         id: decoded.sessionId,
         userId: decoded.userId,
         sessionToken: decoded.sessionToken,
         isValid: true,
-        expires: {
-          gt: new Date(),
-        },
+        expires: { gt: new Date() },
       },
       include: {
         user: {
@@ -40,9 +36,7 @@ export const refreshToken = async (req: Request, res: Response) => {
             banHistory: {
               where: {
                 OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
-                AND: {
-                  liftedAt: null,
-                },
+                AND: { liftedAt: null },
               },
             },
           },
@@ -50,7 +44,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       },
     });
 
-    if (!session || !session.user) {
+    if (!session?.user) {
       return res.status(401).json({
         code: "AUTH_INVALID_SESSION",
         message: "Invalid or expired session",
@@ -58,15 +52,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
 
     if (session.user.banHistory.length > 0) {
-      await db.session.update({
-        where: { id: session.id },
-        data: {
-          isValid: false,
-          revokedAt: new Date(),
-          revokedReason: "User banned",
-        },
-      });
-
+      await sessionService.revokeSession(session.id, "User banned");
       return res.status(403).json({
         code: "AUTH_USER_BANNED",
         message: "Account is banned",
@@ -74,7 +60,6 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
 
     const newSessionToken = crypto.randomUUID();
-
     await db.session.update({
       where: { id: session.id },
       data: {
@@ -83,34 +68,19 @@ export const refreshToken = async (req: Request, res: Response) => {
       },
     });
 
-    const newAccessToken = jwt.sign(
-      {
-        userId: session.user.id,
-        sessionId: session.id,
-      },
-      env.JWT_ACCESS_TOKEN_SECRET,
-      { expiresIn: "15m" }
-    );
+    // Increment token version
+    await sessionService.incrementTokenVersion(session.id);
 
-    const newRefreshToken = jwt.sign(
-      {
-        userId: session.user.id,
-        sessionId: session.id,
-        sessionToken: newSessionToken,
-      },
-      env.JWT_REFRESH_TOKEN_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    const tokens = await generateTokens({
+      userId: session.user.id,
+      sessionId: session.id,
+      sessionToken: newSessionToken,
     });
 
+    setRefreshTokenCookie(res, tokens.refreshToken);
+
     return res.json({
-      accessToken: newAccessToken,
+      accessToken: tokens.accessToken,
       user: {
         id: session.user.id,
         email: session.user.email,
@@ -119,7 +89,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
+    if (error instanceof JsonWebTokenError) {
       return res.status(401).json({
         code: "AUTH_INVALID_REFRESH_TOKEN",
         message: "Invalid refresh token",

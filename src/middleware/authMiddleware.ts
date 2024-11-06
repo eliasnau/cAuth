@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { db } from "../lib/db";
-import { env } from "../env";
+import { authService } from "../services/authService";
+import { sessionService } from "../services/sessionService";
+import { verifyAccessToken } from "../utils/jwt";
+import { authResponses } from "../utils/responses";
+import { JsonWebTokenError } from "jsonwebtoken";
 
 const authenticationMiddleware = async (
   req: Request,
@@ -10,7 +12,7 @@ const authenticationMiddleware = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({
         code: "AUTH_NO_TOKEN",
         message: "No authentication token provided",
@@ -18,24 +20,12 @@ const authenticationMiddleware = async (
     }
 
     const accessToken = authHeader.split(" ")[1];
+    const decoded = verifyAccessToken(accessToken);
 
-    const decoded = jwt.verify(accessToken, env.JWT_ACCESS_TOKEN_SECRET) as {
-      userId: string;
-      sessionId: string;
-    };
-
-    // Check session first
-    const session = await db.session.findFirst({
-      where: {
-        id: decoded.sessionId,
-        isValid: true,
-        revokedAt: null,
-        expires: {
-          gt: new Date(),
-        },
-      },
-    });
-
+    const session = await sessionService.validateSession(
+      decoded.sessionId,
+      decoded.tokenVersion
+    );
     if (!session) {
       return res.status(401).json({
         code: "AUTH_INVALID_SESSION",
@@ -43,32 +33,7 @@ const authenticationMiddleware = async (
       });
     }
 
-    // Only fetch user if session is valid
-    const user = await db.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        profileImg: true,
-        emailVerified: true,
-        twoFactorEnabled: true,
-        riskLevel: true,
-        banHistory: {
-          where: {
-            OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
-            AND: {
-              liftedAt: null,
-            },
-          },
-          select: {
-            reason: true,
-            expiresAt: true,
-          },
-        },
-      },
-    });
-
+    const user = await authService.getUserAuth(decoded.userId);
     if (!user) {
       return res.status(401).json({
         code: "AUTH_USER_NOT_FOUND",
@@ -76,38 +41,24 @@ const authenticationMiddleware = async (
       });
     }
 
-    if (user.banHistory.length > 0) {
+    if (user.banHistory && user.banHistory.length > 0) {
       const ban = user.banHistory[0];
-      return res.status(403).json({
-        code: "AUTH_USER_BANNED",
-        message: "Account is banned",
-        details: {
-          reason: ban.reason,
-          expiresAt: ban.expiresAt,
-        },
-      });
+      return authResponses.userBanned(res, ban.reason, ban.expiresAt);
     }
 
     if (!user.emailVerified) {
-      return res.status(403).json({
-        code: "AUTH_EMAIL_NOT_VERIFIED",
-        message: "Please verify your email address to continue",
-      });
+      return authResponses.emailNotVerified(res);
     }
 
-    // Update session last active timestamp
-    await db.session.update({
-      where: { id: session.id },
-      data: { lastActive: new Date() },
-    });
+    await sessionService.updateSessionActivity(session.id);
 
-    // Attach user and session info to request for downstream handlers
+    // Attach user and session info to request
     (req as any).user = user;
     (req as any).sessionId = session.id;
 
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
+    if (error instanceof JsonWebTokenError) {
       return res.status(401).json({
         code: "AUTH_INVALID_TOKEN",
         message: "Invalid authentication token",

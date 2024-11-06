@@ -9,7 +9,7 @@ export const authResponses = {
       message: "Account is temporarily locked. Please try again later",
     }),
 
-  userBanned: (res: Response, reason?: string, expiresAt?: Date) =>
+  userBanned: (res: Response, reason?: string, expiresAt?: Date | null) =>
     res.status(403).json({
       code: "AUTH_USER_BANNED",
       message: "Account is banned",

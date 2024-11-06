@@ -1,23 +1,22 @@
 import { Request, Response } from "express";
-import bcrypt from "bcryptjs";
-import { db } from "../../lib/db";
-import { createSession } from "../../utils/session";
+import { authService } from "../../services/authService";
+import { sessionService } from "../../services/sessionService";
 import { generateTokens } from "../../utils/jwt";
 import { setRefreshTokenCookie } from "../../utils/cookie";
 import { authResponses } from "../../utils/responses";
+import { db } from "../../lib/db";
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
     }
 
     const user = await db.user.findUnique({ where: { email } });
-
     if (!user || !user.password) {
       return authResponses.invalidCredentials(res);
     }
@@ -26,48 +25,25 @@ export const login = async (req: Request, res: Response) => {
       return authResponses.accountLocked(res);
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      const updatedFailedAttempts = user.failedLoginAttempts + 1;
-
-      const shouldLockAccount = updatedFailedAttempts >= 5;
-      const lockedUntil = shouldLockAccount
-        ? new Date(Date.now() + 15 * 60 * 1000)
-        : null; // 15 minutes
-
-      await db.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginAttempts: updatedFailedAttempts,
-          lockedUntil,
-        },
-      });
-
+    const isValid = await authService.validateCredentials(email, password);
+    if (!isValid) {
+      await authService.updateLoginAttempts(user.id, true);
       return authResponses.invalidCredentials(res);
     }
 
-    const session = await createSession({
+    const session = await sessionService.createSession({
       userId: user.id,
       userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     });
 
-    const { accessToken, refreshToken } = generateTokens({
+    const { accessToken, refreshToken } = await generateTokens({
       userId: user.id,
       sessionId: session.id,
       sessionToken: session.sessionToken,
     });
 
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-        lastLoginAt: new Date(),
-      },
-    });
-
+    await authService.updateLoginAttempts(user.id, false);
     setRefreshTokenCookie(res, refreshToken);
 
     return res.json({

@@ -1,28 +1,28 @@
 import jwt from "jsonwebtoken";
 import { env } from "../env";
+import { db } from "../lib/db";
+import type { TokenPayload } from "../types/auth";
 
-interface TokenPayload {
-  userId: string;
-  sessionId: string;
-  sessionToken?: string;
-}
+export const generateTokens = async ({
+  userId,
+  sessionId,
+  sessionToken,
+}: Omit<TokenPayload, "tokenVersion">) => {
+  const session = await db.session.findUnique({
+    where: { id: sessionId },
+    select: { tokenVersion: true },
+  });
 
-export const generateTokens = (payload: TokenPayload) => {
+  const tokenVersion = session?.tokenVersion || 1;
+
   const accessToken = jwt.sign(
-    {
-      userId: payload.userId,
-      sessionId: payload.sessionId,
-    },
+    { userId, sessionId, tokenVersion },
     env.JWT_ACCESS_TOKEN_SECRET,
     { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
-    {
-      userId: payload.userId,
-      sessionId: payload.sessionId,
-      sessionToken: payload.sessionToken,
-    },
+    { userId, sessionId, sessionToken },
     env.JWT_REFRESH_TOKEN_SECRET,
     { expiresIn: "7d" }
   );
@@ -30,6 +30,10 @@ export const generateTokens = (payload: TokenPayload) => {
   return { accessToken, refreshToken };
 };
 
-export const verifyToken = (token: string, secret: string) => {
-  return jwt.verify(token, secret) as TokenPayload;
+export const verifyAccessToken = (token: string) => {
+  return jwt.verify(token, env.JWT_ACCESS_TOKEN_SECRET) as TokenPayload;
+};
+
+export const verifyRefreshToken = (token: string) => {
+  return jwt.verify(token, env.JWT_REFRESH_TOKEN_SECRET) as TokenPayload;
 };

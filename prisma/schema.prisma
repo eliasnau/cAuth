@@ -31,13 +31,17 @@ model User {
   failedLoginAttempts Int @default(0)
   lockedUntil DateTime?
 
-  banHistory Ban[]
-  
+  banHistory     Ban[]    @relation()
+  bansIssued     Ban[]    @relation("BanIssuer")
+  bansLifted     Ban[]    @relation("BanLifter")
+
   riskLevel String @default("LOW") // LOW, MEDIUM, HIGH
 
   emailVerificationToken String?
 
   PasswordResetToken PasswordResetToken[]
+
+  roles UserRole[]
 }
 
 model Session {
@@ -79,25 +83,24 @@ model Session {
 }
 
 model Ban {
-  id String @id @default(cuid())
-  userId String
-  user User @relation(fields: [userId], references: [id])
-  
-  reason String
-  note String? 
-  evidence Json? 
-  
-  createdAt DateTime @default(now())
-  expiresAt DateTime? // null == permanent
-  liftedAt DateTime?
-  liftedBy String? 
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  reason    String
+  note      String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  issuedBy  String
+  issuedByUser User   @relation("BanIssuer", fields: [issuedBy], references: [id])
+  liftedAt  DateTime?
+  liftedBy  String?
+  liftedByUser User?  @relation("BanLifter", fields: [liftedBy], references: [id])
   liftReason String?
-  
-  issuedBy String 
   ipAddress String?
-  deviceId String?
-  
-  @@index([userId, createdAt])
+
+  @@index([userId])
+  @@index([issuedBy])
+  @@index([liftedBy])
 }
 
 model PasswordResetToken {
@@ -111,4 +114,35 @@ model PasswordResetToken {
 
   @@index([token])
   @@index([userId])
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String      @unique
+  description String?
+  permissions Permission[]
+  users       UserRole[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Permission {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  roles       Role[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      Role     @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  @@unique([userId, roleId])
 }

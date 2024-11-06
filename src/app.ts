@@ -5,6 +5,7 @@ import express from "express";
 import webRoutes from "./routes/web";
 import errorHandler from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
+import adminRouter from "./routes/v1/admin";
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/", webRoutes);
+app.use("/api/v1/admin", adminRouter);
 
 app.use(errorHandler);
 
