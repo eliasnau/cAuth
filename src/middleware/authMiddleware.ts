@@ -23,10 +23,11 @@ const authenticationMiddleware = async (
     const accessToken = authHeader.split(" ")[1];
     const decoded = verifyAccessToken(accessToken);
 
-    const session = await sessionService.validateSession(
-      decoded.sessionId,
-      decoded.tokenVersion
-    );
+    const [session, user] = await Promise.all([
+      sessionService.validateSession(decoded.sessionId, decoded.tokenVersion),
+      authService.getUserAuth(decoded.userId),
+    ]);
+
     if (!session) {
       return res.status(401).json({
         code: "AUTH_INVALID_SESSION",
@@ -34,7 +35,6 @@ const authenticationMiddleware = async (
       });
     }
 
-    const user = await authService.getUserAuth(decoded.userId);
     if (!user) {
       return res.status(401).json({
         code: "AUTH_USER_NOT_FOUND",
@@ -42,7 +42,7 @@ const authenticationMiddleware = async (
       });
     }
 
-    if (user.banHistory && user.banHistory.length > 0) {
+    if (user.banHistory?.[0]) {
       const ban = user.banHistory[0];
       return authResponses.userBanned(res, ban.reason, ban.expiresAt);
     }
@@ -51,11 +51,13 @@ const authenticationMiddleware = async (
       return authResponses.emailNotVerified(res);
     }
 
-    await sessionService.updateSessionActivity(session.id);
+    sessionService
+      .updateSessionActivity(session.id)
+      .catch((err) => logger.error("Failed to update session activity:", err));
 
-    // Attach user and session info to request
     (req as any).user = user;
     (req as any).sessionId = session.id;
+    (req as any).session = session;
 
     next();
   } catch (error) {

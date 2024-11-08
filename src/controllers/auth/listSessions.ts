@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { db } from "../../lib/db";
-
+import logger from "../../utils/logger";
 export const listSessions = async (
   req: Request,
   res: Response,
@@ -40,6 +40,10 @@ export const listSessions = async (
       })),
     });
   } catch (error) {
-    next(error);
+    logger.error("Failed to list sessions:", error);
+    return res.status(500).json({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to list sessions",
+    });
   }
 };

@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../env";
 import { db } from "../lib/db";
 import type { TokenPayload } from "../types/auth";
+import { authConfig } from "../configs/auth";
 
 export const generateTokens = async ({
   userId,
@@ -14,17 +15,27 @@ export const generateTokens = async ({
   });
 
   const tokenVersion = session?.tokenVersion || 1;
+  const TokenConfig = authConfig.tokens;
 
   const accessToken = jwt.sign(
     { userId, sessionId, tokenVersion },
     env.JWT_ACCESS_TOKEN_SECRET,
-    { expiresIn: "15m" }
+    {
+      expiresIn: TokenConfig.access.expiresIn,
+      issuer: TokenConfig.access.issuer,
+      audience: TokenConfig.access.audience,
+    }
   );
 
   const refreshToken = jwt.sign(
     { userId, sessionId, sessionToken },
     env.JWT_REFRESH_TOKEN_SECRET,
-    { expiresIn: "7d" }
+    {
+      expiresIn: "7d",
+      algorithm: "HS256",
+      audience: "api:refresh",
+      issuer: "auth-service",
+    }
   );
 
   return { accessToken, refreshToken };
