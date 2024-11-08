@@ -9,3 +9,7 @@
 #Editors
 /.vscode
 /.idea
+
+#Logs
+/logs/*
+/logs
