@@ -5,6 +5,7 @@ import { generateTokens } from "../../utils/jwt";
 import { setRefreshTokenCookie } from "../../utils/cookie";
 import { sendVerificationEmail } from "../../lib/nodemailer";
 import { db } from "../../lib/db";
+import logger from "../../utils/logger";
 
 export const register = async (
   req: Request,
@@ -39,7 +40,7 @@ export const register = async (
     try {
       await sendVerificationEmail(user.email, user.emailVerificationToken!);
     } catch (emailError) {
-      console.error("Failed to send verification email:", emailError);
+      logger.error("Failed to send verification email:", emailError);
     }
 
     const session = await sessionService.createSession({

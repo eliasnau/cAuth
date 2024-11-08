@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { db } from "../../lib/db";
 import { Permission } from "../../types/permission";
+import logger from "../../utils/logger";
 
 export const listRoles = async (req: Request, res: Response) => {
   try {
@@ -15,7 +16,7 @@ export const listRoles = async (req: Request, res: Response) => {
 
     return res.json({ roles });
   } catch (error) {
-    console.error("List roles error:", error);
+    logger.error("List roles error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -39,7 +40,7 @@ export const createRole = async (req: Request, res: Response) => {
 
     return res.json({ role });
   } catch (error) {
-    console.error("Create role error:", error);
+    logger.error("Create role error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -66,7 +67,7 @@ export const assignRole = async (req: Request, res: Response) => {
 
     return res.json({ userRole });
   } catch (error) {
-    console.error("Assign role error:", error);
+    logger.error("Assign role error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -98,7 +99,7 @@ export const updateRole = async (req: Request, res: Response) => {
 
     return res.json({ role });
   } catch (error) {
-    console.error("Update role error:", error);
+    logger.error("Update role error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -119,7 +120,7 @@ export const deleteRole = async (req: Request, res: Response) => {
 
     return res.json({ message: "Role deleted successfully" });
   } catch (error) {
-    console.error("Delete role error:", error);
+    logger.error("Delete role error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -139,7 +140,7 @@ export const removeRole = async (req: Request, res: Response) => {
 
     return res.json({ message: "Role removed from user successfully" });
   } catch (error) {
-    console.error("Remove role error:", error);
+    logger.error("Remove role error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

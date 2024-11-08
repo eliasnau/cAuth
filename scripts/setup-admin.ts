@@ -15,7 +15,6 @@ import path from "path";
 
 config();
 
-// Configure prompt
 prompt.message = "";
 prompt.delimiter = "";
 prompt.colors = false;
@@ -29,12 +28,10 @@ async function setupAdmin() {
   console.log(chalk.blue("\n🔐 Starting admin setup process...\n"));
 
   try {
-    // Check environment
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL is not set in environment variables");
     }
 
-    // Create default roles and permissions
     console.log(chalk.gray("→ Creating default roles and permissions..."));
     await adminService.createDefaultRoles();
 
@@ -48,7 +45,6 @@ async function setupAdmin() {
 
     console.log(chalk.green("✓ Roles and permissions created successfully\n"));
 
-    // Check for existing super admin
     const existingAdmin = await db.user.findFirst({
       where: {
         roles: {
@@ -80,7 +76,6 @@ async function setupAdmin() {
       }
     }
 
-    // Choose setup method
     const methodSchema: MethodSchema = {
       properties: {
         choice: {
@@ -97,7 +92,6 @@ async function setupAdmin() {
     const { choice } = await getSecureInput(methodSchema);
 
     if (choice === "1") {
-      // Create new admin
       const adminSchema: AdminInputSchema = {
         properties: {
           email: {
@@ -159,7 +153,6 @@ async function setupAdmin() {
 
       const input = await getSecureInput(adminSchema);
 
-      // Check if email exists
       const existingUser = await db.user.findUnique({
         where: { email: input.email as string },
       });
@@ -169,7 +162,6 @@ async function setupAdmin() {
         process.exit(1);
       }
 
-      // Show details and confirm
       console.log(chalk.gray("\nNew admin account details:"));
       console.log(`Email: ${input.email}`);
       console.log(`Name: ${input.name}`);
@@ -191,7 +183,6 @@ async function setupAdmin() {
         process.exit(0);
       }
 
-      // Create the admin account
       await db.$transaction(async (tx) => {
         const hashedPassword = await bcrypt.hash(input.password as string, 10);
 
@@ -243,7 +234,6 @@ async function setupAdmin() {
             chalk.blue("http://localhost:3000/admin/login")
         );
 
-        // After successful setup
         const setupInfo = {
           timestamp: new Date().toISOString(),
           adminEmail: user.email,
@@ -266,7 +256,6 @@ async function setupAdmin() {
         }
       });
     } else {
-      // Grant rights to existing user
       const userSchema: UserEmailSchema = {
         properties: {
           email: {
@@ -319,13 +308,12 @@ async function setupAdmin() {
 
       console.log(chalk.green("\n✅ Super admin rights granted successfully"));
 
-      // Add setup info writing for existing user
       const setupInfo = {
         timestamp: new Date().toISOString(),
         adminEmail: user.email,
         environment: process.env.NODE_ENV,
         version: process.env.npm_package_version,
-        grantedAccess: true, // to indicate this was an existing user
+        grantedAccess: true,
       };
 
       try {
@@ -351,14 +339,12 @@ async function setupAdmin() {
   }
 }
 
-// Execute the setup
 console.log(chalk.blue("\nInitializing admin setup..."));
 setupAdmin().catch((error) => {
   console.error(chalk.red("\n✖ Setup failed:"), error);
   process.exit(1);
 });
 
-// At the start of the script
 process.on("SIGINT", async () => {
   console.log(chalk.yellow("\n\nCleaning up..."));
   await db.$disconnect();

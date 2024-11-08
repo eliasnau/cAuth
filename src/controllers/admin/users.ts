@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../../lib/db";
+import logger from "../../utils/logger";
 
 export const listUsers = async (req: Request, res: Response) => {
   try {
@@ -27,7 +28,7 @@ export const listUsers = async (req: Request, res: Response) => {
 
     return res.json({ users });
   } catch (error) {
-    console.error("List users error:", error);
+    logger.error("List users error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -54,7 +55,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     return res.json({ user });
   } catch (error) {
-    console.error("Update user error:", error);
+    logger.error("Update user error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -69,7 +70,7 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     return res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error("Delete user error:", error);
+    logger.error("Delete user error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

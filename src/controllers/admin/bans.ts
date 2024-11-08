@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../../lib/db";
+import logger from "../../utils/logger";
 
 export const createBan = async (req: Request, res: Response) => {
   try {
@@ -39,7 +40,7 @@ export const createBan = async (req: Request, res: Response) => {
 
     return res.json({ ban });
   } catch (error) {
-    console.error("Create ban error:", error);
+    logger.error("Create ban error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -70,7 +71,7 @@ export const removeBan = async (req: Request, res: Response) => {
 
     return res.json({ ban });
   } catch (error) {
-    console.error("Remove ban error:", error);
+    logger.error("Remove ban error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -108,7 +109,7 @@ export const listBans = async (req: Request, res: Response) => {
 
     return res.json({ bans });
   } catch (error) {
-    console.error("List bans error:", error);
+    logger.error("List bans error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -138,7 +139,7 @@ export const updateBan = async (req: Request, res: Response) => {
 
     return res.json({ ban });
   } catch (error) {
-    console.error("Update ban error:", error);
+    logger.error("Update ban error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

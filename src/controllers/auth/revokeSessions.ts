@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { db } from "../../lib/db";
+import logger from "../../utils/logger";
 
 export const revokeSession = async (
   req: Request,
@@ -9,8 +10,6 @@ export const revokeSession = async (
   try {
     const { sessionId } = req.params;
     const userId = (req as any).user.id;
-
-    console.log(sessionId);
 
     const session = await db.session.findFirst({
       where: {
@@ -48,7 +47,7 @@ export const revokeSession = async (
       message: "Session revoked successfully",
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    logger.error("Error revoking session:", error);
     return res.status(500).json({
       code: "AUTH_ERROR",
       message: "Internal server error",
@@ -83,7 +82,7 @@ export const revokeAllSessions = async (
       count: result.count,
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    logger.error("Error revoking all sessions:", error);
     return res.status(500).json({
       code: "AUTH_ERROR",
       message: "Internal server error",

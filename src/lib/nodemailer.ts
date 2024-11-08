@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import nodemailer from "nodemailer";
 import { env } from "../env";
 import { VerifyEmail } from "../emails/verify-email";
+import logger from "../utils/logger";
 
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST,
@@ -34,10 +35,10 @@ export async function sendVerificationEmail(
       html: emailHtml,
     });
 
-    console.log("Email sent successfully:", info.messageId);
+    logger.info("Verification email sent successfully to: ", userEmail);
     return info;
   } catch (error) {
-    console.error("Error sending verification email:", error);
-    throw error; // Re-throw to handle in the registration controller
+    logger.error("Error sending verification email:", error);
+    throw error;
   }
 }

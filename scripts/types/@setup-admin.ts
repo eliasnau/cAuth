@@ -1,7 +1,6 @@
 import { Role, User, UserRole } from "@prisma/client";
 import { Schema } from "prompt";
 
-// Input schemas
 export interface AdminInputSchema extends Schema {
   properties: {
     email: {
@@ -58,7 +57,6 @@ export interface UserEmailSchema extends Schema {
   };
 }
 
-// Service responses
 export interface AdminSetupResponse {
   success: boolean;
   user?: User & {
@@ -69,14 +67,12 @@ export interface AdminSetupResponse {
   error?: string;
 }
 
-// Function types
 export type GetSecureInput = (schema: Schema) => Promise<{
   [key: string]: string;
 }>;
 
 export type SetupAdmin = () => Promise<void>;
 
-// Utility types
 export interface AdminCreationData {
   email: string;
   name: string;

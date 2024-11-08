@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { Permission } from "../types/permission";
 import { permissionService } from "../services/permissionService";
+import logger from "../utils/logger";
 
 export const requirePermission = (permission: Permission) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -26,7 +27,7 @@ export const requirePermission = (permission: Permission) => {
 
       next();
     } catch (error) {
-      console.error("Permission check error:", error);
+      logger.error("Permission check error:", error);
       return res.status(500).json({
         code: "SERVER_ERROR",
         message: "Internal server error",
@@ -59,7 +60,7 @@ export const requireAnyPermission = (permissions: Permission[]) => {
 
       next();
     } catch (error) {
-      console.error("Permission check error:", error);
+      logger.error("Permission check error:", error);
       return res.status(500).json({
         code: "SERVER_ERROR",
         message: "Internal server error",

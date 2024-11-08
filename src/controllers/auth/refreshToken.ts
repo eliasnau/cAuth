@@ -6,6 +6,7 @@ import { setRefreshTokenCookie } from "../../utils/cookie";
 import crypto from "crypto";
 import { db } from "../../lib/db";
 import { JsonWebTokenError } from "jsonwebtoken";
+import logger from "../../utils/logger";
 
 export const refreshToken = async (req: Request, res: Response) => {
   try {
@@ -95,7 +96,7 @@ export const refreshToken = async (req: Request, res: Response) => {
         message: "Invalid refresh token",
       });
     }
-    console.error("refreshToken error:", error);
+    logger.error("refreshToken error:", error);
     return res.status(500).json({
       code: "AUTH_ERROR",
       message: "Internal server error",

@@ -4,6 +4,7 @@ import { sessionService } from "../services/sessionService";
 import { verifyAccessToken } from "../utils/jwt";
 import { authResponses } from "../utils/responses";
 import { JsonWebTokenError } from "jsonwebtoken";
+import logger from "../utils/logger";
 
 const authenticationMiddleware = async (
   req: Request,
@@ -64,7 +65,11 @@ const authenticationMiddleware = async (
         message: "Invalid authentication token",
       });
     }
-    next(error);
+    logger.error("Authentication middleware error:", error);
+    return res.status(500).json({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Internal server error",
+    });
   }
 };
 

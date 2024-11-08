@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { db } from "../../lib/db";
 import jwt from "jsonwebtoken";
 import { env } from "../../env";
+import logger from "../../utils/logger";
 
 export const logout = async (
   req: Request,
@@ -9,7 +10,6 @@ export const logout = async (
   next: NextFunction
 ) => {
   try {
-    console.log(req.cookies);
     const refreshToken = req?.cookies?.refreshToken;
 
     if (!refreshToken) {
@@ -53,7 +53,7 @@ export const logout = async (
       message: "Successfully logged out",
     });
   } catch (error) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
     return res.status(500).json({
       code: "AUTH_ERROR",
       message: "Internal server error",
