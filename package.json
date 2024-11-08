@@ -5,7 +5,8 @@
   "main": "app.ts",
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "start": "nodemon src/app.ts",
+    "start": "ts-node src/app.ts",
+    "dev": "nodemon src/app.ts",
     "test": "npm run build && mocha dist/test/*",
     "setup:prisma": "prisma generate",
     "setup:admin": "ts-node scripts/setup-admin.ts"
