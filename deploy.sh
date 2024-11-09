@@ -6,6 +6,19 @@ APP_DIR="/opt/auth"
 DOCKER_COMPOSE="docker compose"
 GITHUB_REPO="eliasnau/cAuth"
 BRANCH="main"
+MAX_WAIT=30  # Maximum seconds to wait
+
+# Function to check if containers are healthy
+check_health() {
+    app_status=$(docker inspect --format='{{.State.Health.Status}}' auth-app 2>/dev/null)
+    db_status=$(docker inspect --format='{{.State.Health.Status}}' auth-postgres 2>/dev/null)
+    redis_status=$(docker inspect --format='{{.State.Health.Status}}' auth-redis 2>/dev/null)
+    
+    if [ "$app_status" = "healthy" ] && [ "$db_status" = "healthy" ] && [ "$redis_status" = "healthy" ]; then
+        return 0
+    fi
+    return 1
+}
 
 # Print commands and their arguments as they are executed
 set -x
@@ -34,19 +47,34 @@ $DOCKER_COMPOSE pull
 $DOCKER_COMPOSE build --no-cache app
 $DOCKER_COMPOSE up -d --force-recreate
 
-# Wait for containers to be healthy
+# Wait for containers to be healthy with timeout
 echo "Waiting for containers to be healthy..."
-sleep 30
+elapsed=0
+while ! check_health; do
+    if [ $elapsed -ge $MAX_WAIT ]; then
+        echo "❌ Deployment failed: Containers not healthy after $MAX_WAIT seconds"
+        echo "Container statuses:"
+        docker ps
+        echo "Container logs:"
+        $DOCKER_COMPOSE logs
+        exit 1
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+    echo "Still waiting... ($elapsed seconds elapsed)"
+done
+
+echo "✅ All containers healthy after $elapsed seconds"
+
+# Run migrations
+echo "Running database migrations..."
+if ! $DOCKER_COMPOSE exec -T app npx prisma migrate deploy; then
+    echo "Migration failed, attempting reset..."
+    $DOCKER_COMPOSE exec -T app npx prisma migrate reset --force
+fi
 
 # Cleanup
 docker system prune -f
-
-# Verify deployment
-# if $DOCKER_COMPOSE ps | grep -q "auth-app.*running"; then
-#     echo "✅ Deployment successful! All services are running."
-# else
-#     echo "❌ Deployment failed! Check logs for details."
-# fi
 
 # Print logs
 $DOCKER_COMPOSE logs --tail=50 app
