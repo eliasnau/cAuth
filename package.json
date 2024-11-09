@@ -53,6 +53,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/prismjs": "^2.0.0",
+    "@types/html-to-text": "^9.0.4",
+    "@types/tailwindcss": "^3.1.0",
     "@types/chalk-animation": "^1.6.3",
     "@types/cookie-parser": "^1.4.7",
     "@types/figlet": "^1.7.0",
