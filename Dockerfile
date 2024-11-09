@@ -34,7 +34,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create volume for logs
-VOLUME ["/app/logs"]
+VOLUME ["/cAuth/logs"]
 
 # Set environment variables
 ENV NODE_ENV=production

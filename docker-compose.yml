@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
-    container_name: express-app
+    container_name: auth-app
     restart: unless-stopped
     depends_on:
       postgres:
@@ -43,10 +43,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - "com.docker.compose.project=auth"
 
   postgres:
     image: postgres:15-alpine
-    container_name: postgres
+    container_name: auth-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-root}
@@ -56,7 +58,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - app-network
     healthcheck:
@@ -68,10 +69,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    labels:
+      - "com.docker.compose.project=auth"
 
   redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: auth-redis
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:-password}
     ports:
@@ -85,26 +88,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/ssl:/etc/nginx/ssl
-    depends_on:
-      - app
-    networks:
-      - app-network
+    labels:
+      - "com.docker.compose.project=auth"
 
 networks:
   app-network:
+    name: auth-network
     driver: bridge
 
 volumes:
   postgres-data:
+    name: auth-postgres-data
   redis-data:
+    name: auth-redis-data

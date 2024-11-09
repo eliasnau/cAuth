@@ -8,4 +8,10 @@ router.get("/", (req, res) => {
 
 router.use("/v1", [v1]);
 
+router.get("/health", (req, res) => {
+  res
+    .status(200)
+    .json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
 export default router;
