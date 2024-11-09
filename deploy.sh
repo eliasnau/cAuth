@@ -48,11 +48,6 @@ $DOCKER_COMPOSE up -d --force-recreate
 echo "Waiting for containers to be healthy..."
 sleep 30
 
-# Run migrations with increased timeout and memory
-$DOCKER_COMPOSE exec -T \
-    -e NODE_OPTIONS="--max-old-space-size=1024" \
-    app npx prisma migrate deploy --timeout 60000
-
 # Cleanup
 docker system prune -f
 

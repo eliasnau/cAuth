@@ -13,6 +13,7 @@ COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate
+RUN npx prisma migrate deploy
 
 # Set environment variables
 ENV NODE_ENV=production
