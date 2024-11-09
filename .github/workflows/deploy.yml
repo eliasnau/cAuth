@@ -21,4 +21,4 @@ jobs:
 
       - name: Deploy to server
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd /opt/app && ./deploy.sh"
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd /opt/auth && ./deploy.sh"
