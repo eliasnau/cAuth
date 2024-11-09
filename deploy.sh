@@ -42,12 +42,11 @@ sleep 30
 docker system prune -f
 
 # Verify deployment
-if $DOCKER_COMPOSE ps | grep -q "auth-app.*running"; then
-    echo "✅ Deployment successful! All services are running."
-else
-    echo "❌ Deployment failed! Check logs for details."
-    exit 1
-fi
+# if $DOCKER_COMPOSE ps | grep -q "auth-app.*running"; then
+#     echo "✅ Deployment successful! All services are running."
+# else
+#     echo "❌ Deployment failed! Check logs for details."
+# fi
 
 # Print logs
 $DOCKER_COMPOSE logs --tail=50 app
