@@ -23,9 +23,12 @@ set -x
 # Navigate to app directory
 cd $APP_DIR
 
+# Create backups directory if it doesn't exist
+mkdir -p backups
+
 # Backup database
 backup_date=$(date +%Y%m%d_%H%M%S)
-# $DOCKER_COMPOSE exec -T postgres pg_dump -U ${POSTGRES_USER:-root} ${POSTGRES_DB:-app} > "backups/db_backup_$backup_date.sql"
+$DOCKER_COMPOSE exec -T postgres pg_dump -U ${POSTGRES_USER:-root} ${POSTGRES_DB:-app} > "backups/db_backup_$backup_date.sql"
 
 # Pull latest changes
 git fetch origin $BRANCH
@@ -41,8 +44,14 @@ $DOCKER_COMPOSE pull
 $DOCKER_COMPOSE build --no-cache app
 $DOCKER_COMPOSE up -d --force-recreate
 
-# Run migrations
-$DOCKER_COMPOSE exec -T app npx prisma migrate deploy
+# Wait for containers to be healthy
+echo "Waiting for containers to be healthy..."
+sleep 30
+
+# Run migrations with increased timeout and memory
+$DOCKER_COMPOSE exec -T \
+    -e NODE_OPTIONS="--max-old-space-size=1024" \
+    app npx prisma migrate deploy --timeout 60000
 
 # Cleanup
 docker system prune -f
