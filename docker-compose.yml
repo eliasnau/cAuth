@@ -20,7 +20,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${PORT:-3000}
+      PORT: ${PORT:-1234}
       DATABASE_URL: postgresql://${POSTGRES_USER:-root}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-app}
       REDIS_URL: redis://redis:6379
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_TOKEN_SECRET}
@@ -32,7 +32,7 @@ services:
       SMTP_FROM_EMAIL: noreply@dev.codity.net
       SMTP_FROM_NAME: Phantom
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-1234}:1234"
     volumes:
       - ./logs:/app/logs
     networks:
