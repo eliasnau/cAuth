@@ -44,7 +44,7 @@ fi
 
 # Build and deploy
 $DOCKER_COMPOSE pull
-$DOCKER_COMPOSE build --no-cache app
+$DOCKER_COMPOSE build --no-cache phantom
 $DOCKER_COMPOSE up -d --force-recreate
 
 # Wait for containers to be healthy with timeout
