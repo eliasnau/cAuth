@@ -11,12 +11,14 @@ import { db } from "./lib/db";
 import logger from "./utils/logger";
 import { createSpinner } from "nanospinner";
 import { validateEnv } from "./env";
+import { PrismaClient } from "@prisma/client";
 console.clear();
 displayLogo();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const startTime = new Date();
+const prisma = new PrismaClient();
 
 validateEnv();
 
@@ -58,6 +60,21 @@ process.on("uncaughtException", (err) => {
 
 const server = app.listen(PORT, async () => {
   await startServer(PORT, startTime);
+  console.log("🚀 Server started on port", PORT);
+  console.log("📝 Environment:", process.env.NODE_ENV);
+  console.log(
+    "🔌 Database URL:",
+    process.env.DATABASE_URL?.replace(/:[^:@]*@/, ":****@")
+  );
+});
+
+// Add error handling
+process.on("unhandledRejection", (error) => {
+  console.error("❌ Unhandled rejection:", error);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught exception:", error);
 });
 
 export default app;
