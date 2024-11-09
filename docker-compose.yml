@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runner
     container_name: auth-app
     restart: unless-stopped
     deploy:
