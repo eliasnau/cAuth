@@ -18,7 +18,6 @@ RUN npx prisma migrate deploy
 # Set environment variables
 ENV NODE_ENV=production
 
-EXPOSE 3000
 
 # Run directly with ts-node
 CMD ["npx", "ts-node", "./src/app.ts"]
