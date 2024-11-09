@@ -29,9 +29,14 @@ cd $APP_DIR
 # Create backups directory if it doesn't exist
 mkdir -p backups
 
-# Backup database
-backup_date=$(date +%Y%m%d_%H%M%S)
-$DOCKER_COMPOSE exec -T postgres pg_dump -U ${POSTGRES_USER:-root} ${POSTGRES_DB:-app} > "backups/db_backup_$backup_date.sql"
+# Check if containers exist and are running before backup
+if docker compose ps postgres | grep -q "running"; then
+    # Backup database only if postgres is running
+    backup_date=$(date +%Y%m%d_%H%M%S)
+    $DOCKER_COMPOSE exec -T postgres pg_dump -U ${POSTGRES_USER:-root} ${POSTGRES_DB:-app} > "backups/db_backup_$backup_date.sql"
+else
+    echo "No existing containers to backup - first deployment"
+fi
 
 # Pull latest changes
 git fetch origin $BRANCH
@@ -44,7 +49,7 @@ fi
 
 # Build and deploy
 $DOCKER_COMPOSE pull
-$DOCKER_COMPOSE build --no-cache phantom
+$DOCKER_COMPOSE build --no-cache app
 $DOCKER_COMPOSE up -d --force-recreate
 
 # Wait for containers to be healthy with timeout
@@ -68,13 +73,13 @@ echo "✅ All containers healthy after $elapsed seconds"
 
 # Run migrations
 echo "Running database migrations..."
-if ! $DOCKER_COMPOSE exec -T phantom npx prisma migrate deploy; then
+if ! $DOCKER_COMPOSE exec -T app npx prisma migrate deploy; then
     echo "Migration failed, attempting reset..."
-    $DOCKER_COMPOSE exec -T phantom npx prisma migrate reset --force
+    $DOCKER_COMPOSE exec -T app npx prisma migrate reset --force
 fi
 
 # Cleanup
 docker system prune -f
 
 # Print logs
-$DOCKER_COMPOSE logs --tail=50 phantom
+$DOCKER_COMPOSE logs --tail=50 app
