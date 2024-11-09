@@ -90,25 +90,22 @@ export const displayServerInfo = (port: number | string, startTime: Date) => {
 
 export const startServer = async (port: number | string, startTime: Date) => {
   // Initial loading steps
-  const loadingSteps = [
-    { text: "Initializing server...", duration: 1000 },
-    { text: "Loading configurations...", duration: 800 },
-    { text: "Setting up routes...", duration: 600 },
-    { text: "Finalizing setup...", duration: 500 },
-  ];
+  //   const loadingSteps = [
+  //     { text: "Initializing server...", duration: 1000 },
+  //     { text: "Loading configurations...", duration: 800 },
+  //     { text: "Setting up routes...", duration: 600 },
+  //     { text: "Finalizing setup...", duration: 500 },
+  //   ];
 
-  for (const step of loadingSteps) {
-    const spinner = createSpinner(step.text).start();
-    await sleep(step.duration);
-    spinner.success();
-  }
+  //   for (const step of loadingSteps) {
+  //     const spinner = createSpinner(step.text).start();
+  //     await sleep(step.duration);
+  //     spinner.success();
+  //   }
 
   const spinner = createSpinner("Server initialized successfully!").start();
   await sleep(500);
   spinner.success();
-
-  process.stdout.write("\x1b[7A");
-  process.stdout.write("\x1b[0J");
 
   displayServerInfo(port, startTime);
 };
