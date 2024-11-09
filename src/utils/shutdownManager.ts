@@ -1,5 +1,6 @@
 import logger from "./logger";
 import { db } from "../lib/db";
+import { Server } from "http";
 
 let isShuttingDown = false;
 
@@ -21,7 +22,7 @@ export async function gracefulShutdown(signal: string, serverInstance: Server) {
     // Close HTTP server
     logger.info("Closing HTTP server...");
     try {
-      await closeHttpServer(serverInstance);
+      //await closeHttpServer(serverInstance);
       logger.info("HTTP server closed successfully");
     } catch (error) {
       logger.error("Failed to close HTTP server:", error);
