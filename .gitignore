@@ -1,6 +1,6 @@
 # General
 /node_modules
-/.env*
+/.env
 /error.log
 /project/node_modules
 /project/.env
