@@ -25,7 +25,7 @@ cd $APP_DIR
 
 # Backup database
 backup_date=$(date +%Y%m%d_%H%M%S)
-$DOCKER_COMPOSE exec -T postgres pg_dump -U ${POSTGRES_USER:-root} ${POSTGRES_DB:-app} > "backups/db_backup_$backup_date.sql"
+# $DOCKER_COMPOSE exec -T postgres pg_dump -U ${POSTGRES_USER:-root} ${POSTGRES_DB:-app} > "backups/db_backup_$backup_date.sql"
 
 # Pull latest changes
 git fetch origin $BRANCH
