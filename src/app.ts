@@ -6,7 +6,6 @@ import webRoutes from "./routes/web";
 import cookieParser from "cookie-parser";
 import adminRouter from "./routes/v1/admin";
 import { displayLogo, startServer } from "./utils/serverDisplay";
-import { gracefulShutdown } from "./utils/shutdownManager";
 import { db } from "./lib/db";
 import logger from "./utils/logger";
 import { createSpinner } from "nanospinner";
@@ -45,12 +44,6 @@ try {
   routesSpinner.error({ text: "Error setting up routes" });
   logger.error("Routes error:", error);
 }
-
-process.removeAllListeners("SIGINT");
-process.removeAllListeners("SIGTERM");
-// Set up shutdown handlers with the server instance
-process.on("SIGTERM", () => gracefulShutdown("SIGTERM", server));
-process.on("SIGINT", () => gracefulShutdown("SIGINT", server));
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
