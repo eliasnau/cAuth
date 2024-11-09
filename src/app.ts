@@ -45,12 +45,6 @@ try {
   logger.error("Routes error:", error);
 }
 
-// Handle uncaught exceptions
-process.on("uncaughtException", (err) => {
-  logger.error("Uncaught Exception:", err);
-  gracefulShutdown("uncaughtException", server);
-});
-
 const server = app.listen(PORT, async () => {
   await startServer(PORT, startTime);
   console.log("🚀 Server started on port", PORT);
