@@ -68,13 +68,13 @@ echo "✅ All containers healthy after $elapsed seconds"
 
 # Run migrations
 echo "Running database migrations..."
-if ! $DOCKER_COMPOSE exec -T app npx prisma migrate deploy; then
+if ! $DOCKER_COMPOSE exec -T phantom npx prisma migrate deploy; then
     echo "Migration failed, attempting reset..."
-    $DOCKER_COMPOSE exec -T app npx prisma migrate reset --force
+    $DOCKER_COMPOSE exec -T phantom npx prisma migrate reset --force
 fi
 
 # Cleanup
 docker system prune -f
 
 # Print logs
-$DOCKER_COMPOSE logs --tail=50 app
+$DOCKER_COMPOSE logs --tail=50 phantom
